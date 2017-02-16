@@ -1,6 +1,7 @@
 ﻿using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -17,17 +18,49 @@ namespace WebCraping
             { "&#8211;","-"},
             { "&#8230;", "..." }
         };
+        static string fileLog = Path.Combine(Directory.GetCurrentDirectory(), "Log.txt");
+        static string currentPath = Directory.GetCurrentDirectory();
+
+        static void Log(string text)
+        {
+            File.AppendAllText(fileLog, text + "\n");
+            Console.WriteLine(text);
+        }
 
         static void Main(string[] args)
         {
-            var dataPath = Path.Combine(@"E:\DataDownload", "Data");
-            CreateFolder(dataPath);
+            try
+            {
+                var dataPath = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+                var test = ConfigurationManager.GetSection("test");
+                CreateFolder(dataPath);
 
-            loadCategory(dataPath, "http://slowgerman.com/inhaltsverzeichnis/");
+                loadCategory(dataPath, "http://slowgerman.com/inhaltsverzeichnis/");
+                /*loadCategory(dataPath, "http://slowgerman.com/category/absolute-beginner/");
+                loadCategory(dataPath, "http://slowgerman.com/category//alltag-2/");
+                loadCategory(dataPath, "http://slowgerman.com/category/dialog-2/");
+                loadCategory(dataPath, "http://slowgerman.com/category//essen-trinken/");
+                loadCategory(dataPath, "http://slowgerman.com/category//feiertage/");
+                loadCategory(dataPath, "http://slowgerman.com/category//freundschaft-familie/");
+                loadCategory(dataPath, "http://slowgerman.com/category//geschichte/");
+                loadCategory(dataPath, "http://slowgerman.com/category//gesundheit-soziales/");
+                loadCategory(dataPath, "http://slowgerman.com/category//kunst-und-kultur/");
+                loadCategory(dataPath, "http://slowgerman.com/category//sprache/");
+                loadCategory(dataPath, "http://slowgerman.com/category//verkehr/");
+                */
+                
+            }
+            catch (Exception ex)
+            {
+                Log("Error " + ex.Message);
+                Log(ex.StackTrace);
+            }
         }
 
         private static void loadCategory(string baseDirectory, string url)
         {
+            Log($"Load category url :::\t {url}");
+
             var folderName = Path.Combine(baseDirectory, GetUrlName(url));
             CreateFolder(folderName);
 
@@ -35,26 +68,46 @@ namespace WebCraping
             var nodes = html.DocumentNode.SelectNodes("//ul[@class=\"lcp_catlist\"]/li/a").ToArray();
             foreach (HtmlNode item in nodes)
             {
-                Console.WriteLine(item.Attributes["title"].Value + "  " + item.Attributes["href"].Value);
+                Log(item.Attributes["title"].Value + "  " + item.Attributes["href"].Value);
                 DownloadPage(folderName, item.Attributes["href"].Value);
             }
 
             Console.ReadKey();
         }
 
+        private static string TinyPath(string path)
+        {
+            return path.Remove(0, currentPath.Length);
+        }
+
         private static void DownloadPage(string saveTo, string url)
         {
+            Log($"Load page ::: {url}");
+
             saveTo = Path.Combine(saveTo, GetUrlName(url));
             CreateFolder(saveTo);
 
             if (File.Exists(Path.Combine(saveTo, "done")))
-                return; 
+            {
+                Log("Skip " + TinyPath(saveTo));
+                return;
+            }
 
-            var html = new HtmlWeb().Load(url);
+            try
+            {
+                var html = new HtmlWeb().Load(url);
 
-            loadText(html.DocumentNode, saveTo);
-            loadAudio(html.DocumentNode, saveTo);
-            loadPhoto(html.DocumentNode, saveTo);
+                loadText(html.DocumentNode, saveTo);
+                loadAudio(html.DocumentNode, saveTo);
+                loadPhoto(html.DocumentNode, saveTo);
+
+                File.Create(Path.Combine(saveTo, "done"));
+            }
+            catch(Exception ex)
+            {
+                Log("Error " + ex.Message);
+                Log(ex.StackTrace);
+            }
         }
 
         private static void loadPhoto(HtmlNode htmlNode, string folder)
@@ -100,6 +153,8 @@ namespace WebCraping
         }
         private static void rawDownload(string url, string fileName)
         {
+            Log($"Download {url} to {TinyPath(fileName)}");
+
             using (var client = new WebClient())
             {
                 client.DownloadFile(url, fileName);
@@ -138,6 +193,7 @@ namespace WebCraping
 
             if (content.Contains("&#"))
             {
+                Log("Wrong content" + content);
                 throw new Exception("Sai sai");
             }
 

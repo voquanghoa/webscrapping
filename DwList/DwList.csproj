@@ -53,12 +53,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LessonParser\CompleteTextParser.cs" />
+    <Compile Include="LessonParser\QuestionAnswerParser.cs" />
     <Compile Include="LessonParser\SingleChoiceParser.cs" />
     <Compile Include="Lesson\BaseLesson.cs" />
     <Compile Include="Lesson\CompleteText.cs" />
     <Compile Include="Href.cs" />
     <Compile Include="Lesson\Lesson.cs" />
     <Compile Include="Lesson\MultiChoice.cs" />
+    <Compile Include="Lesson\QuestionAnswer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Lesson\SingleChoice.cs" />

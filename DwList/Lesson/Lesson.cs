@@ -13,6 +13,10 @@ namespace DwList
         [DataMember(Name = "content")]
         public string Content { get; set; }
 
+        [DataMember(Name = "title")]
+        public string Title { get; set; }
+
+        [DataMember(Name = "lessons")]
         public List<BaseLesson> Lessons { get; set; }
     }
 }

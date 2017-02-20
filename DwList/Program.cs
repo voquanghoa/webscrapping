@@ -14,6 +14,10 @@ namespace DwList
     class Program
     {
         private static string localDataPath = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+        private static List<string> ignoredClass = new List<string>()
+        {
+            "modular assign_image"
+        };
 
         static void Main(string[] args)
         {
@@ -22,7 +26,11 @@ namespace DwList
                 CreateFolder(localDataPath);
                 var url = "http://www.dw.com/de/viele-k%C3%B6che-verderben-den-brei/l-36385982";
                 var xpath = "//div[@id=\"bodyContent\"]//ul[@class=\"smallList\"][1]/li/a";
+
                 HtmlNode.ElementsFlags.Remove("form");
+                HtmlNode.ElementsFlags.Remove("p");
+                HtmlNode.ElementsFlags.Remove("option");
+
                 var html = new HtmlWeb().Load(url);
                 var nodes = html.DocumentNode.SelectNodes(xpath).Where(x => x.Attributes.Count == 1).ToArray();
                 var links = nodes.Select(x => new Href(x)).ToArray();
@@ -31,11 +39,13 @@ namespace DwList
                     Console.WriteLine($"{link.Text} -- {link.Url}");
                     loadPage(link);
                 }
+                Console.WriteLine("Download done. Press any key to finish.");
             }
             catch(Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
+                Console.WriteLine("Some errors occurs. Press any key to finish.");
                 
             }
             Console.ReadKey();
@@ -51,24 +61,32 @@ namespace DwList
         
         private static void loadPage(Href href)
         {
-            var dataPath = Path.Combine(localDataPath, href.Text);
+            
+            var dataPath = Path.Combine(localDataPath, href.Slug);
+            if (File.Exists(Path.Combine(dataPath, "Done")))
+            {
+                return;
+            }
+
             CreateFolder(dataPath);
 
             var html = new HtmlWeb().Load("http://www.dw.com" + href.Url);
             var document = html.DocumentNode;
 
-            downloadTestContent(document, dataPath);
-            //downloadMp3(document, dataPath);
-            //downloadImage(document, dataPath);
+            downloadTestContent(href, document, dataPath);
+            downloadMp3(document, dataPath);
+            downloadImage(document, dataPath);
+
+            File.Create(Path.Combine(dataPath, "Done"));
         }
 
-        private static void downloadTestContent(HtmlNode node, string dataPath)
+        private static void downloadTestContent(Href href, HtmlNode node, string dataPath)
         {
             var formNodes = node.SelectNodes("//div[@class=\"dkTaskWrapper tab2\"]/form");
             var path = Path.Combine(dataPath, "lesson.json");
             
             var lesson = new Lesson();
-
+            lesson.Title = href.Text;
             lesson.Lessons = new List<BaseLesson>();
             lesson.Content = TestUtils.ReformatContent(node.SelectSingleNode("//div[@class=\"dkTaskWrapper tab3\"]").InnerText);
             
@@ -87,9 +105,21 @@ namespace DwList
                     baseLesson = SingleChoiceParser.Parse(form);
                 }
 
+                if (string.Equals(classes, "modular assign"))
+                {
+                    baseLesson = QuestionAnswerParser.Parse(form);
+                }
+
                 if (baseLesson != null)
                 {
                     lesson.Lessons.Add(baseLesson);
+                }
+                else
+                {
+                    if (!ignoredClass.Contains(classes))
+                    {
+                        throw new Exception($"Unsupport tag {classes} for page");
+                    }
                 }
             }
 

@@ -11,19 +11,21 @@ namespace DwList.LessonParser
     public class CompleteTextParser
     {
         public static CompleteText Parse(HtmlNode node)
-        {
+        { 
             CompleteText completeText = new CompleteText();
 
-            completeText.Title = node.SelectSingleNode(node.XPath + "/div[@class=\"news pseudo\"]").InnerText;
-            completeText.Context = node.SelectSingleNode(node.XPath + "/p[@class=\"dkLargeText\"]").InnerHtml.Replace("<input correct=\"", "{{").Replace("\" type=\"text\" class=\"lineLeft\">", "}}");
+            completeText.Title = TestUtils.ReformatContent(node.SelectSingleNode(node.XPath + "/div[@class=\"news pseudo\"]").InnerText);
+
+            completeText.Context = TestUtils.ReformatContent(node.SelectSingleNode(node.XPath + "//p[@class=\"dkLargeText\"]").InnerHtml.Replace("<input correct=\"", "{{").Replace("\" type=\"text\" class=\"lineLeft\">", "}}"));
             completeText.Words = new List<string>();
+
             var begin = 0;
             var end =0;
 
             while((begin = completeText.Context.IndexOf("{{", begin)) >= 0)
             {
                 end = completeText.Context.IndexOf("}}", begin);
-                completeText.Words.Add(completeText.Context.Substring(begin + 2, end - begin - 2));
+                completeText.Words.Add(TestUtils.ReformatContent(completeText.Context.Substring(begin + 2, end - begin - 2)));
                 begin = end + 2;
             }
 

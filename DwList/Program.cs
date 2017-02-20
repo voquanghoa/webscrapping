@@ -66,11 +66,17 @@ namespace DwList
         {
             var formNodes = node.SelectNodes("//div[@class=\"dkTaskWrapper tab2\"]/form");
             var path = Path.Combine(dataPath, "lesson.json");
-            BaseLesson baseLesson = null;
-            Lesson lesson = new Lesson();
+            
+            var lesson = new Lesson();
+
+            lesson.Lessons = new List<BaseLesson>();
+            lesson.Content = TestUtils.ReformatContent(node.SelectSingleNode("//div[@class=\"dkTaskWrapper tab3\"]").InnerText);
+            
             foreach (var form in formNodes)
             {
+                BaseLesson baseLesson = null;
                 var classes = form.Attributes["class"].Value;
+
                 if(string.Equals(classes, "modular gaps"))
                 {
                     baseLesson = CompleteTextParser.Parse(form);
@@ -78,7 +84,7 @@ namespace DwList
 
                 if(string.Equals(classes, "modular test"))
                 {
-
+                    baseLesson = SingleChoiceParser.Parse(form);
                 }
 
                 if (baseLesson != null)
